@@ -1,0 +1,241 @@
+module write(
+input w_clk,
+input reset,
+input w_en,
+input [3:0]g_rptr_sync,
+output reg fifofull,
+output [3:0]g_wptr,
+output [3:0]b_wptr_next,
+output [3:0]g_wptr_next,
+output reg[3:0]b_wptr
+);
+
+wire write_allow;
+
+assign write_allow = w_en && !fifofull;
+
+assign b_wptr_next = b_wptr + write_allow;
+assign g_wptr = (b_wptr ^ (b_wptr >> 1));
+assign g_wptr_next = (b_wptr_next ^ (b_wptr_next >> 1));
+
+always @(posedge w_clk)
+begin
+    if(reset)
+    begin
+        b_wptr <= 4'd0;
+        fifofull <= 1'b0;
+    end
+    else
+    begin
+        b_wptr <= b_wptr_next;
+
+        if(g_wptr_next == {~g_rptr_sync[3:2], g_rptr_sync[1:0]})
+            fifofull <= 1'b1;
+        else
+            fifofull <= 1'b0;
+    end
+end
+
+endmodule
+
+
+module read(
+input r_clk,
+input reset,
+input r_en,
+input [3:0]g_wptr_sync,
+output [3:0]g_rptr,
+output reg[3:0]b_rptr,
+output reg fifoempty
+);
+
+wire read_allow;
+wire empty;
+
+wire [3:0]g_rptr_next;
+wire [3:0]b_rptr_next;
+
+assign read_allow = r_en && !fifoempty;
+
+assign b_rptr_next = b_rptr + read_allow;
+assign g_rptr = (b_rptr ^ (b_rptr >> 1));
+assign g_rptr_next = (b_rptr_next ^ (b_rptr_next >> 1));
+
+assign empty = (g_rptr_next == g_wptr_sync);
+
+always @(posedge r_clk)
+begin
+    if(reset)
+    begin
+        b_rptr <= 4'd0;
+        fifoempty <= 1'b1;
+    end
+    else
+    begin
+        b_rptr <= b_rptr_next;
+        fifoempty <= empty;
+    end
+end
+
+endmodule
+
+
+// synchronisers
+module sync(
+input r_clk,
+input w_clk,
+input reset,
+input [3:0]g_wptr,
+input [3:0]g_rptr,
+output [3:0]g_rptr_sync,
+output [3:0]g_wptr_sync
+);
+
+reg[3:0]FFR1;
+reg[3:0]FFR2;
+reg[3:0]FFW1;
+reg[3:0]FFW2;
+
+assign g_wptr_sync = FFR2;
+assign g_rptr_sync = FFW2;
+
+always @(posedge r_clk)
+begin
+    if(reset)
+    begin
+        FFR1 <= 4'd0;
+        FFR2 <= 4'd0;
+    end
+    else
+    begin
+        FFR1 <= g_wptr;
+        FFR2 <= FFR1;
+    end
+end
+
+always @(posedge w_clk)
+begin
+    if(reset)
+    begin
+        FFW1 <= 4'd0;
+        FFW2 <= 4'd0;
+    end
+    else
+    begin
+        FFW1 <= g_rptr;
+        FFW2 <= FFW1;
+    end
+end
+
+endmodule
+
+
+// memory
+module memo(
+input [7:0]data_in,
+input w_en,
+input fifofull,
+input fifoempty,
+input w_clk,
+input r_clk,
+input r_en,
+input [3:0]b_rptr,
+input [3:0]b_wptr,
+output reg [7:0]data_out
+);
+
+reg [7:0]mem[7:0];
+
+always @(posedge w_clk)
+begin
+    if(w_en && !fifofull)
+        mem[b_wptr[2:0]] <= data_in;
+end
+
+always @(posedge r_clk)
+begin
+    if(r_en && !fifoempty)
+        data_out <= mem[b_rptr[2:0]];
+end
+
+endmodule
+
+
+module connect(
+input r_clk,
+input w_clk,
+input reset,
+input w_en,
+input r_en,
+input [7:0]data_in,
+output fifoempty,
+output fifofull,
+output [3:0]b__rpt,
+output [3:0]b__wpt,
+output [7:0]data_out,
+output [3:0]b_wptr_next,
+output [3:0]g_wptr_next
+);
+
+wire[3:0]g_rptr;
+wire[3:0]g_wptr;
+wire[3:0]b_rptr;
+wire[3:0]b_wptr;
+wire[3:0]g_rptr_sync;
+wire[3:0]g_wptr_sync;
+
+wire f_full;
+wire f_empty;
+
+assign b__rpt = b_rptr;
+assign b__wpt = b_wptr;
+
+assign fifoempty = f_empty;
+assign fifofull = f_full;
+
+write d1(
+    .w_clk(w_clk),
+    .reset(reset),
+    .w_en(w_en),
+    .g_rptr_sync(g_rptr_sync),
+    .fifofull(f_full),
+    .g_wptr(g_wptr),
+    .b_wptr_next(b_wptr_next),
+    .g_wptr_next(g_wptr_next),
+    .b_wptr(b_wptr)
+);
+
+read d2(
+    .r_clk(r_clk),
+    .reset(reset),
+    .r_en(r_en),
+    .g_wptr_sync(g_wptr_sync),
+    .g_rptr(g_rptr),
+    .b_rptr(b_rptr),
+    .fifoempty(f_empty)
+);
+
+memo d3(
+    .data_in(data_in),
+    .w_en(w_en),
+    .fifofull(f_full),
+    .fifoempty(f_empty),
+    .w_clk(w_clk),
+    .r_clk(r_clk),
+    .r_en(r_en),
+    .b_rptr(b_rptr),
+    .b_wptr(b_wptr),
+    .data_out(data_out)
+);
+
+sync d4(
+    .r_clk(r_clk),
+    .w_clk(w_clk),
+    .reset(reset),
+    .g_wptr(g_wptr),
+    .g_rptr(g_rptr),
+    .g_rptr_sync(g_rptr_sync),
+    .g_wptr_sync(g_wptr_sync)
+);
+
+endmodule

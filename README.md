@@ -292,7 +292,7 @@ This confirms that the FIFO passed all functional test cases.
 
 ## Screenshot 1: Initial FIFO Operation
 
-![Simulation](Screenshots/ss-2.png)
+![Simulation](Screenshots/ss-1.png)
 
 
 This screenshot should show:
@@ -309,7 +309,7 @@ This screenshot should show:
 
 ## Screenshot 2: Pointer Wrap-Around Verification
 
-Paste your second GTKWave screenshot here.
+![Simulation](Screenshots/ss-1.png)
 
 This screenshot should show:
 
@@ -319,23 +319,12 @@ This screenshot should show:
 - Correct data order from `data_in` to `data_out`
 - Empty flag changing correctly
 
-```markdown
-![GTKWave Screenshot 2](images/gtkwave_part2.png)
-```
-
----
-
 ## Screenshot 3: Terminal Output
 
-Paste your terminal output screenshot here.
+![Simulation](Screenshots/ss-3.png)
 
 This screenshot should show that all tests passed.
 
-```markdown
-![Terminal Output](images/simulation_passed.png)
-```
-
----
 
 ## GTKWave Signals Observed
 

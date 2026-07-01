@@ -292,7 +292,8 @@ This confirms that the FIFO passed all functional test cases.
 
 ## Screenshot 1: Initial FIFO Operation
 
-Paste your first GTKWave screenshot here.
+![Simulation](Screenshots/ss-2.png)
+
 
 This screenshot should show:
 
@@ -305,11 +306,6 @@ This screenshot should show:
 - Full flag behavior
 - Write attempt with `EE` during full condition
 
-```markdown
-![GTKWave Screenshot 1](Screenshots/ss-1.png)
-```
-
----
 
 ## Screenshot 2: Pointer Wrap-Around Verification
 

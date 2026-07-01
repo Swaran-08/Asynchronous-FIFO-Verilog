@@ -306,7 +306,7 @@ This screenshot should show:
 - Write attempt with `EE` during full condition
 
 ```markdown
-![GTKWave Screenshot 1](images/gtkwave_part1.png)
+![GTKWave Screenshot 1](Screenshots/ss-1.png)
 ```
 
 ---
